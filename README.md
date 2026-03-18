@@ -5,7 +5,7 @@ A script that simulates attack interactions in Street Fighter III: 3rd Strike at
 
 Place `tester.lua` and `settings.ini` in the same folder.
 
-Open settings.ini and go to lines 10 and 11, and then write the attacks you want to test after p1_buttons and p2_buttons, writing the name of the normal attack and if there are any directions being held during the attack, add them with numpad notation.
+Open `settings.ini` and go to lines 10 and 11, and then write the attacks you want to test after p1_buttons and p2_buttons, writing the name of the normal attack and if there are any directions being held during the attack, add them with numpad notation.
 
 Numpad notation:
 
