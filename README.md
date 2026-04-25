@@ -31,8 +31,6 @@ Place `tester.lua` and `settings.ini` in the same folder.
 
 Open `settings.ini` and go to lines 10 and 11, and then write the attacks you want to test after p1_buttons and p2_buttons, writing the name of the normal attack and if there are any directions being held during the attack, add them with numpad notation.
 
-## Coarse search:
-
 Within `settings.ini`, you will also find pixel_step, with a default value of 10. This is how many pixels closer characters would move each time no change is detected from the previous distance. If a change is detected, it will go back 1 pixel until the exact point of change is found.
 
 A higher value (e.g. >5) would result in faster findings, whereas a lower value would be more accurate.
