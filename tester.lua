@@ -901,10 +901,12 @@ do
           end
 
           -- Goes through both blocks' groups to see if all the interactions are the same
-          for k, group in pairs(block1.groups) do
-            if group.otype ~= block2.groups[k].otype or group.f_start ~= block2.groups[k].f_start or group.f_end ~= block2.groups[k].f_end then
-              matching = false
-              break
+          if matching then
+            for k, group in pairs(block1.groups) do
+              if group.otype ~= block2.groups[k].otype or group.f_start ~= block2.groups[k].f_start or group.f_end ~= block2.groups[k].f_end then
+                matching = false
+                break
+              end
             end
           end
 
