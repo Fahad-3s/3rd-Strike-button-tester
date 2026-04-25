@@ -45,8 +45,6 @@ local p2_button = { "P2 Weak Punch", "P2 Medium Punch", "P2 Strong Punch", "P2 W
 
 local speedmode_turbo = true -- Set this to true if you want to simulate at fast forward speed. False for normal speed
 
-local pixel_step = 10 -- Default value, will be set in settings.ini
-
 local LP, MP, HP, LK, MK, HK = 1, 2, 3, 4, 5, 6
 
 local p1_joystick = { "P1 Up", "P1 Down", "P1 Left", "P1 Right" }
@@ -137,19 +135,6 @@ local char_names = {
 local p1_char = char_names[memory.readbyte(0x02011387)] or "P1"
 local p2_char = char_names[memory.readbyte(0x02011388)] or "P2"
 
-local function deep_copy(orig)
-    if type(orig) ~= "table" then
-        return orig
-    end
-
-    local copy = {}
-    for k, v in pairs(orig) do
-        copy[deep_copy(k)] = deep_copy(v)
-    end
-
-    return copy
-end
-
 -- Convert a list of direction indices to a numpad number
 -- Directions: 1=Up, 2=Down, 3=Left, 4=Right, 5=Forward, 6=Back
 -- Forward/Back are resolved at press time so here we treat 5=Forward=Right-ish, 6=Back=Left-ish
@@ -206,13 +191,7 @@ local function parse_settings(filepath)
     line = line:match("^%s*(.-)%s*$")
     if line ~= "" and line:sub(1,1) ~= "#" then
       local key, val = line:match("^([%w_]+)%s*=%s*(.-)%s*$")
-      if key then
-        if key == "pixel_step" then
-          pixel_step = tonumber(val)
-        else
-          settings[key] = val
-        end
-      end
+      if key then settings[key] = val end
     end
   end
   f:close()
@@ -354,62 +333,42 @@ do
       local p1_name = p1_char .. " " .. move_name(p1_press, p1_press_dirs)
       local p2_name = p2_char .. " " .. move_name(p2_press, p2_press_dirs)
 
-      -- function dmgreadwin(f, p1_got_hit, p2_got_hit)
+      function dmgreadwin(f, p1_got_hit, p2_got_hit)
 
-      --     if p2_got_hit and not p1_got_hit then
-      --     local s = "At "..f..", "..p1_name.." beats "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadlose(f, p1_got_hit, p2_got_hit)
-
-      --     if p1_got_hit and not p2_got_hit then
-      --     local s = "At "..f..", "..p1_name.." loses to "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadtrade(f, p1_got_hit, p2_got_hit)
-
-      --     if p1_got_hit and p2_got_hit then
-      --     local s = "At "..f..", "..p1_name.." trades with "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadnothing(f, p1_got_hit, p2_got_hit)
-
-      --     if not p1_got_hit and not p2_got_hit then
-      --     print("nothing")
-      --     f_results[f] = "nothing"
-      --     end
-
-      -- end
-
-      function dmgread(f, p1_got_hit, p2_got_hit)
-
-        local s = ""
-
-        if p1_got_hit and p2_got_hit then
-          s = "At "..f..", "..p1_name.." trades with "..p2_name
+          if p2_got_hit and not p1_got_hit then
+          local s = "At "..f..", "..p1_name.." beats "..p2_name
           print(s)
           f_results[f] = s
-        elseif not p1_got_hit and p2_got_hit then
-          s = "At "..f..", "..p1_name.." beats "..p2_name
+          end
+
+      end
+
+      function dmgreadlose(f, p1_got_hit, p2_got_hit)
+
+          if p1_got_hit and not p2_got_hit then
+          local s = "At "..f..", "..p1_name.." loses to "..p2_name
           print(s)
           f_results[f] = s
-        elseif p1_got_hit and not p2_got_hit then
-          s = "At "..f..", "..p1_name.." loses to "..p2_name
+          end
+
+      end
+
+      function dmgreadtrade(f, p1_got_hit, p2_got_hit)
+
+          if p1_got_hit and p2_got_hit then
+          local s = "At "..f..", "..p1_name.." trades with "..p2_name
           print(s)
           f_results[f] = s
-        end
+          end
+
+      end
+
+      function dmgreadnothing(f, p1_got_hit, p2_got_hit)
+
+          if not p1_got_hit and not p2_got_hit then
+          print("nothing")
+          f_results[f] = "nothing"
+          end
 
       end
 
@@ -525,10 +484,6 @@ do
         end
       end
       print("Starting real test from distance search position")
-
-      local last_sorted_fs = nil
-      local fine_scan_mode = false
-      local just_changed = false
 
       while true do
 
@@ -676,13 +631,10 @@ do
 
             end
 
-            -- dmgreadlose(f, p1_got_hit, p2_got_hit)
-            -- dmgreadtrade(f, p1_got_hit, p2_got_hit)
-            -- dmgreadwin(f, p1_got_hit, p2_got_hit)
-            -- dmgreadnothing(f, p1_got_hit, p2_got_hit)
-            dmgread(f, p1_got_hit, p2_got_hit)
-
-
+            dmgreadlose(f, p1_got_hit, p2_got_hit)
+            dmgreadtrade(f, p1_got_hit, p2_got_hit)
+            dmgreadwin(f, p1_got_hit, p2_got_hit)
+            dmgreadnothing(f, p1_got_hit, p2_got_hit)
 
           end
 
@@ -706,63 +658,16 @@ do
           end
           table.sort(sorted_fs)
           table.insert(all_distances, {distance = distance, sorted_fs = sorted_fs, results = f_results})
-
-          -- Compare current results to previous results
-          local results_changed = false
-          if last_sorted_fs ~= nil then
-            if #sorted_fs ~= #last_sorted_fs then
-              results_changed = true
-            else
-              for i, v in ipairs(sorted_fs) do
-                if v ~= last_sorted_fs[i] then
-                  results_changed = true
-                  break
-                end
-              end
-            end
-          end
-
-          local step
-          if fine_scan_mode then
-            if results_changed and not just_changed then
-              -- Results differ from last fine step — boundary found, return to coarse
-              just_changed = true
-              fine_scan_mode = false
-              step = pixel_step
-            else
-              -- Still same results, keep moving 1 pixel apart
-              step = -1
-              just_changed = false
-            end
-          else
-            if results_changed and not just_changed then
-              -- Coarse jump landed on a change — enter fine scan mode
-              fine_scan_mode = true
-              step = -1
-            else
-              -- No change, continue coarse scan
-              step = pixel_step
-              just_changed = false
-            end
-          end
-
-          last_sorted_fs = sorted_fs
           f_results = {}
 
           -- Stop when distance reaches dist_b
           if distance <= dist_b then break end
 
-          -- Calculate next distance, ensuring we don't overshoot dist_b or go negative
-          local next_distance = distance - step
-          if next_distance < 0 then next_distance = 0 end
-          if next_distance < dist_b then next_distance = dist_b end
-
-          -- Move P1 accordingly
-          local pixels_to_move = distance - next_distance
+          -- Move P1 one pixel closer to P2 for the next distance step
           if p1_xpos < p2_xpos then
-            p1_pos_abs = p1_pos_abs + pixels_to_move
+            p1_pos_abs = p1_pos_abs + 1
           else
-            p1_pos_abs = p1_pos_abs - pixels_to_move
+            p1_pos_abs = p1_pos_abs - 1
           end
 
       end
@@ -960,14 +865,7 @@ do
       end
 
       local block_num = 1
-      for _, block in ipairs(normalised_dist_blocks) do
-
-        if block.d_start < block.d_end then
-          block.d_start, block.d_end = block.d_end, block.d_start
-        end
-
-        
-
+      for _, block in ipairs(dist_blocks) do
         -- Distance header
         local dist_str
         if block.d_start == block.d_end then
