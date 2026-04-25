@@ -45,8 +45,6 @@ local p2_button = { "P2 Weak Punch", "P2 Medium Punch", "P2 Strong Punch", "P2 W
 
 local speedmode_turbo = true -- Set this to true if you want to simulate at fast forward speed. False for normal speed
 
-local pixel_step = 10 -- Default value, will be set in settings.ini
-
 local LP, MP, HP, LK, MK, HK = 1, 2, 3, 4, 5, 6
 
 local p1_joystick = { "P1 Up", "P1 Down", "P1 Left", "P1 Right" }
@@ -137,19 +135,6 @@ local char_names = {
 local p1_char = char_names[memory.readbyte(0x02011387)] or "P1"
 local p2_char = char_names[memory.readbyte(0x02011388)] or "P2"
 
-local function deep_copy(orig)
-    if type(orig) ~= "table" then
-        return orig
-    end
-
-    local copy = {}
-    for k, v in pairs(orig) do
-        copy[deep_copy(k)] = deep_copy(v)
-    end
-
-    return copy
-end
-
 -- Convert a list of direction indices to a numpad number
 -- Directions: 1=Up, 2=Down, 3=Left, 4=Right, 5=Forward, 6=Back
 -- Forward/Back are resolved at press time so here we treat 5=Forward=Right-ish, 6=Back=Left-ish
@@ -206,13 +191,7 @@ local function parse_settings(filepath)
     line = line:match("^%s*(.-)%s*$")
     if line ~= "" and line:sub(1,1) ~= "#" then
       local key, val = line:match("^([%w_]+)%s*=%s*(.-)%s*$")
-      if key then
-        if key == "pixel_step" then
-          pixel_step = tonumber(val)
-        else
-          settings[key] = val
-        end
-      end
+      if key then settings[key] = val end
     end
   end
   f:close()
@@ -354,62 +333,42 @@ do
       local p1_name = p1_char .. " " .. move_name(p1_press, p1_press_dirs)
       local p2_name = p2_char .. " " .. move_name(p2_press, p2_press_dirs)
 
-      -- function dmgreadwin(f, p1_got_hit, p2_got_hit)
+      function dmgreadwin(f, p1_got_hit, p2_got_hit)
 
-      --     if p2_got_hit and not p1_got_hit then
-      --     local s = "At "..f..", "..p1_name.." beats "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadlose(f, p1_got_hit, p2_got_hit)
-
-      --     if p1_got_hit and not p2_got_hit then
-      --     local s = "At "..f..", "..p1_name.." loses to "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadtrade(f, p1_got_hit, p2_got_hit)
-
-      --     if p1_got_hit and p2_got_hit then
-      --     local s = "At "..f..", "..p1_name.." trades with "..p2_name
-      --     print(s)
-      --     f_results[f] = s
-      --     end
-
-      -- end
-
-      -- function dmgreadnothing(f, p1_got_hit, p2_got_hit)
-
-      --     if not p1_got_hit and not p2_got_hit then
-      --     print("nothing")
-      --     f_results[f] = "nothing"
-      --     end
-
-      -- end
-
-      function dmgread(f, p1_got_hit, p2_got_hit)
-
-        local s = ""
-
-        if p1_got_hit and p2_got_hit then
-          s = "At "..f..", "..p1_name.." trades with "..p2_name
+          if p2_got_hit and not p1_got_hit then
+          local s = "At "..f..", "..p1_name.." beats "..p2_name
           print(s)
           f_results[f] = s
-        elseif not p1_got_hit and p2_got_hit then
-          s = "At "..f..", "..p1_name.." beats "..p2_name
+          end
+
+      end
+
+      function dmgreadlose(f, p1_got_hit, p2_got_hit)
+
+          if p1_got_hit and not p2_got_hit then
+          local s = "At "..f..", "..p1_name.." loses to "..p2_name
           print(s)
           f_results[f] = s
-        elseif p1_got_hit and not p2_got_hit then
-          s = "At "..f..", "..p1_name.." loses to "..p2_name
+          end
+
+      end
+
+      function dmgreadtrade(f, p1_got_hit, p2_got_hit)
+
+          if p1_got_hit and p2_got_hit then
+          local s = "At "..f..", "..p1_name.." trades with "..p2_name
           print(s)
           f_results[f] = s
-        end
+          end
+
+      end
+
+      function dmgreadnothing(f, p1_got_hit, p2_got_hit)
+
+          if not p1_got_hit and not p2_got_hit then
+          print("nothing")
+          f_results[f] = "nothing"
+          end
 
       end
 
@@ -525,10 +484,6 @@ do
         end
       end
       print("Starting real test from distance search position")
-
-      local last_sorted_fs = nil
-      local fine_scan_mode = false
-      local just_changed = false
 
       while true do
 
@@ -676,13 +631,10 @@ do
 
             end
 
-            -- dmgreadlose(f, p1_got_hit, p2_got_hit)
-            -- dmgreadtrade(f, p1_got_hit, p2_got_hit)
-            -- dmgreadwin(f, p1_got_hit, p2_got_hit)
-            -- dmgreadnothing(f, p1_got_hit, p2_got_hit)
-            dmgread(f, p1_got_hit, p2_got_hit)
-
-
+            dmgreadlose(f, p1_got_hit, p2_got_hit)
+            dmgreadtrade(f, p1_got_hit, p2_got_hit)
+            dmgreadwin(f, p1_got_hit, p2_got_hit)
+            dmgreadnothing(f, p1_got_hit, p2_got_hit)
 
           end
 
@@ -706,63 +658,16 @@ do
           end
           table.sort(sorted_fs)
           table.insert(all_distances, {distance = distance, sorted_fs = sorted_fs, results = f_results})
-
-          -- Compare current results to previous results
-          local results_changed = false
-          if last_sorted_fs ~= nil then
-            if #sorted_fs ~= #last_sorted_fs then
-              results_changed = true
-            else
-              for i, v in ipairs(sorted_fs) do
-                if v ~= last_sorted_fs[i] then
-                  results_changed = true
-                  break
-                end
-              end
-            end
-          end
-
-          local step
-          if fine_scan_mode then
-            if results_changed and not just_changed then
-              -- Results differ from last fine step — boundary found, return to coarse
-              just_changed = true
-              fine_scan_mode = false
-              step = pixel_step
-            else
-              -- Still same results, keep moving 1 pixel apart
-              step = -1
-              just_changed = false
-            end
-          else
-            if results_changed and not just_changed then
-              -- Coarse jump landed on a change — enter fine scan mode
-              fine_scan_mode = true
-              step = -1
-            else
-              -- No change, continue coarse scan
-              step = pixel_step
-              just_changed = false
-            end
-          end
-
-          last_sorted_fs = sorted_fs
           f_results = {}
 
           -- Stop when distance reaches dist_b
           if distance <= dist_b then break end
 
-          -- Calculate next distance, ensuring we don't overshoot dist_b or go negative
-          local next_distance = distance - step
-          if next_distance < 0 then next_distance = 0 end
-          if next_distance < dist_b then next_distance = dist_b end
-
-          -- Move P1 accordingly
-          local pixels_to_move = distance - next_distance
+          -- Move P1 one pixel closer to P2 for the next distance step
           if p1_xpos < p2_xpos then
-            p1_pos_abs = p1_pos_abs + pixels_to_move
+            p1_pos_abs = p1_pos_abs + 1
           else
-            p1_pos_abs = p1_pos_abs - pixels_to_move
+            p1_pos_abs = p1_pos_abs - 1
           end
 
       end
@@ -867,105 +772,8 @@ do
       local out = io.open(filename, "w")
       out:write(header .. "\n\n")
 
-      -- Create table to eliminate duplicate results at different distances
-      merged_dist_blocks = {}
-      merged_indices = {}
-
-      -- Create table for cleaned results
-      normalised_dist_blocks = {}
-
-      -- Iterates through each and every block and compares with each other to see if they have same results and are not disjointed
-      for i, block1 in ipairs(dist_blocks) do
-        for j, block2 in ipairs(dist_blocks) do
-
-          -- Variable to see if blocks should be processed
-          process = true
-
-          -- If they've been processed already, do not process again
-          for _, merged_index in ipairs(merged_indices) do
-            if merged_index == i or merged_index == j then
-              process = false
-            end
-          end
-
-          -- If the two blocks are referring to the same block, do not process
-          if block1 == block2 then
-            process = false
-          end
-
-          -- First checks to see if the length of both blocks groups are the same, and if the key is the same
-          if #block1.groups == #block2.groups and block1.key == block2.key then
-            matching = true
-          else
-            matching = false
-          end
-
-          -- Goes through both blocks' groups to see if all the interactions are the same
-          for k, group in pairs(block1.groups) do
-            if group.otype ~= block2.groups[k].otype or group.f_start ~= block2.groups[k].f_start or group.f_end ~= block2.groups[k].f_end then
-              matching = false
-              break
-            end
-          end
-
-          -- If they are matching and should be processed, do the following
-          if matching and process then
-            -- Adds these to show that they've been processed
-            table.insert(merged_indices, i)
-            table.insert(merged_indices, j)
-
-            -- Create a copy of block 1
-            block1copy = deep_copy(block1)
-
-            -- Merge the two blocks by start and end
-            if block1.d_start > block2.d_start then
-              block1copy.d_end = block2.d_end
-            else
-              block1copy.d_start = block2.d_start
-            end
-
-            -- Add them to the merged blocks table
-            table.insert(merged_dist_blocks, block1copy)
-          elseif process then
-
-            -- Add them to the normalised list to show that they've been processed
-            table.insert(merged_indices, i)
-            table.insert(merged_indices, j)
-            table.insert(normalised_dist_blocks, block1)
-            table.insert(normalised_dist_blocks, block2)
-          end
-
-        end
-      end
-
-      -- Add the merged blocks to the normalised list
-      for _, merged_dist_block in ipairs(merged_dist_blocks) do
-        table.insert(normalised_dist_blocks, merged_dist_block)
-      end
-
-      -- Sorts the normalised list
-      table.sort(normalised_dist_blocks, function(a, b)
-        return a.d_start > b.d_start
-      end)
-
-      -- If there are missing pixel distances, extend blocks to fill the gaps
-      for i, block in ipairs(normalised_dist_blocks) do
-        if i > 1 then
-          if normalised_dist_blocks[i - 1].d_end ~= block.d_start + 1 then
-            block.d_start = normalised_dist_blocks[i - 1].d_end - 1
-          end
-        end
-      end
-
       local block_num = 1
-      for _, block in ipairs(normalised_dist_blocks) do
-
-        if block.d_start < block.d_end then
-          block.d_start, block.d_end = block.d_end, block.d_start
-        end
-
-        
-
+      for _, block in ipairs(dist_blocks) do
         -- Distance header
         local dist_str
         if block.d_start == block.d_end then
